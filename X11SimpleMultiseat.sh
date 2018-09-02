@@ -3,6 +3,19 @@ CHILD_USER=${CHILD_USER:-tobias}
 RESOLUTION=${RESOLUTION:-1920x1080}
 
 set -x 
+
+
+# for Virtual GL checkout:
+# https://virtualgl.org/Documentation/Documentation
+# to install VirtualGL.
+# then start your application in Xephyr with:
+# /opt/VirtualGL/bin/vglrun -- <your opengl application>
+
+if /opt/VirtualGL/bin/glxinfo -display :0 -c|grep -P "P[^ ]*$" >/dev/null; then
+	echo "Virtual GL seems to be active - allowing user access"
+	xhost +LOCAL:
+fi
+
 #fullscreen seems to take full width of X11 and ignore "-screen"
 MOUSE=${MOUSE:-/dev/input/by-path/pci-0000:00:14.0-usb-0:5.4.2:1.0-event-mouse}
 KEYBOARD=${KEYBOARD:-/dev/input/by-path/pci-0000:00:14.0-usb-0:5.4.1:1.0-event-kbd}
