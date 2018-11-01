@@ -19,10 +19,12 @@ echo "done"
 
 echo "Please move the mouse"
 export MOUSE=$(cat /tmp/test-fifo|grep -m 1 "/dev/input/.*")
+echo $MOUSE
 
 
 echo "Please press Ctrl often"
 export KEYBOARD=$(cat /tmp/test-fifo|grep -m 1 "/dev/input/.*")
+echo $KEYBOARD
 
 echo Thank you
 
