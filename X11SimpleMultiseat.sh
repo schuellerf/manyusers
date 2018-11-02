@@ -29,6 +29,15 @@ export DISPLAY=:$DISP_NUM
 if [ -d /home/.ecryptfs/${CHILD_USER} ]; then
 	sudo ecryptfs-verify -e -u ${CHILD_USER} 2>/dev/null && sudo su --login -c ecryptfs-mount-private ${CHILD_USER}
 fi
+
+PA_NAME="$(pacmd list-sinks|grep -Po "(?<=name: <).*(?=>)")"
+if [ "$(echo "$PA_NAME"|wc -l)" -eq 1 ]; then
+	echo "Found good pulse audio name: $PA_NAME"
+	sudo su --login -c "pactl load-module module-tunnel-sink \"server=127.0.0.1 sink=$PA_NAME sink_name=local_sound\"" ${CHILD_USER}
+else
+	echo "Bad pulse audio names: $PA_NAME"
+fi
+
 sudo su --login -c "dbus-launch --exit-with-session xfce4-session" ${CHILD_USER}
 
 sleep 1
