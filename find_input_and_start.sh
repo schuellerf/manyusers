@@ -5,12 +5,12 @@ sudo apt install xserver-xephyr evtest
 sudo rm -rf /tmp/test-fifo
 mkfifo /tmp/test-fifo
 check() {
-	sudo evtest $1|grep --line-buffered "^Event: "|dd bs=100 count=1 >/dev/null 2>&1 && echo "$1" >> /tmp/test-fifo
+	sudo evtest $1 2>/dev/null|grep --line-buffered "^Event: "|dd bs=100 count=1 >/dev/null 2>&1 && echo "$1" >> /tmp/test-fifo
 }
 
 declare -a pids
 echo "Starting listeners"
-for e in $( ls /dev/input/event* ); do
+for e in $( ls /dev/input/by-path/*event-kbd* /dev/input/by-path/*event-mouse* ); do
 	check $e >/dev/null 2>&1 &
 	p=$(ps --ppid $! -o pid=)
 	pids+=("$p")

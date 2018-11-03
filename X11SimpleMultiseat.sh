@@ -21,6 +21,28 @@ MOUSE=${MOUSE:-/dev/input/by-path/pci-0000:00:14.0-usb-0:5.4.2:1.0-event-mouse}
 KEYBOARD=${KEYBOARD:-/dev/input/by-path/pci-0000:00:14.0-usb-0:5.4.1:1.0-event-kbd}
 DISP_NUM=${DISP_NUM:-2}
 
+set +x 
+PA_LIST=( $(pacmd list-sinks|grep -Po "(?<=name: <).*(?=>)") )
+
+if [ ${#PA_LIST[*]} -eq 1 ] ; then
+	PA_NAME=${PA_LIST[0]}
+	echo "Found good pulse audio name: $PA_NAME"
+else
+	# found multiples
+	PA_LIST=( $(pacmd list-sinks|grep -Po "(?<=name: <).*(?=>)") )
+
+	echo "----"
+	I=0
+	for n in ${PA_LIST[*]}; do
+		echo "$I: $n"
+		I=$(( $I + 1 ))
+	done
+	read -p "Please select a sound output: " IDX
+
+	PA_NAME=${PA_LIST[$IDX]}
+	echo "You selected: $PA_NAME"
+fi
+
 sudo Xephyr :$DISP_NUM -resizeable -keybd evdev,,device=${KEYBOARD},xkbrules=evdev,xkbmodel=evdev -mouse evdev,,device=${MOUSE} -dpi 96 -retro -no-host-grab -softCursor -screen $RESOLUTION +extension GLX &
 export PID=$!
 
@@ -30,14 +52,10 @@ if [ -d /home/.ecryptfs/${CHILD_USER} ]; then
 	sudo ecryptfs-verify -e -u ${CHILD_USER} 2>/dev/null && sudo su --login -c ecryptfs-mount-private ${CHILD_USER}
 fi
 
-PA_NAME="$(pacmd list-sinks|grep -Po "(?<=name: <).*(?=>)")"
-if [ "$(echo "$PA_NAME"|wc -l)" -eq 1 ]; then
-	echo "Found good pulse audio name: $PA_NAME"
-	sudo su --login -c "pactl load-module module-tunnel-sink \"server=127.0.0.1 sink=$PA_NAME sink_name=local_sound\"" ${CHILD_USER}
-else
-	echo "Bad pulse audio names: $PA_NAME"
-fi
 
+sudo su --login -c "pactl load-module module-tunnel-sink \"server=127.0.0.1 sink=$PA_NAME sink_name=local_sound\"" ${CHILD_USER}
+
+set -x
 sudo su --login -c "dbus-launch --exit-with-session xfce4-session" ${CHILD_USER}
 
 sleep 1
