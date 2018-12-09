@@ -52,8 +52,10 @@ if [ -d /home/.ecryptfs/${CHILD_USER} ]; then
 	sudo ecryptfs-verify -e -u ${CHILD_USER} 2>/dev/null && sudo su --login -c ecryptfs-mount-private ${CHILD_USER}
 fi
 
+sudo bash -c "cp -f /home/\${SUDO_USER}/.config/pulse/cookie /home/${CHILD_USER}/.Xephyr_pa_cookie"
+sudo chown ${CHILD_USER}  /home/${CHILD_USER}/.Xephyr_pa_cookie
 
-sudo su --login -c "pactl load-module module-tunnel-sink \"server=127.0.0.1 sink=$PA_NAME sink_name=local_sound\"" ${CHILD_USER}
+sudo su --login -c "pactl load-module module-tunnel-sink \"server=127.0.0.1 sink=$PA_NAME sink_name=local_sound cookie=/home/${CHILD_USER}/.Xephyr_pa_cookie\"" ${CHILD_USER}
 
 set -x
 sudo su --login -c "dbus-launch --exit-with-session xfce4-session" ${CHILD_USER}
