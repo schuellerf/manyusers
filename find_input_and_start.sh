@@ -28,7 +28,7 @@ echo $KEYBOARD
 
 echo Thank you
 
-sleep 5
+sleep 1
 
 echo "Stopping listeners"
 #sudo kill ${pids[*]} >/dev/null 2>&1

@@ -1,6 +1,7 @@
 # Many Users
 Quick and dirty script for ubuntu to let other people work on your PC at the same time
 
+
 ## Usage
 at least you have to set the variable `CHILD_USER` to a username which exists on your computer and then start `./find_input_and_start.sh`
 
