@@ -42,4 +42,4 @@ echo "The mouse is $MOUSE"
 echo "The keyboard is $KEYBOARD"
 
 echo "Let's go"
-./X11SimpleMultiseat.sh
+$(dirname $0)/X11SimpleMultiseat.sh
