@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-sudo apt install xserver-xephyr evtest
+UBUNTU_PACKAGES="xserver-xephyr evtest"
+
+for package in ${UBUNTU_PACKAGES}; do
+  if ! apt list --installed 2>/dev/null|grep "^$package" >/dev/null; then
+      sudo apt install -y $package
+  fi
+done
 
 sudo rm -rf /tmp/test-fifo
 mkfifo /tmp/test-fifo
