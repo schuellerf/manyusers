@@ -23,13 +23,12 @@ DISP_NUM=${DISP_NUM:-2}
 
 set +x 
 PA_LIST=( $(pacmd list-sinks|grep -Po "(?<=name: <).*(?=>)") )
+PA_SRC_LIST=( $(pacmd list-sources|grep -Po "(?<=name: <).*(?=>)"|grep -v "\\.monitor") )
 
 if [ ${#PA_LIST[*]} -eq 1 ] ; then
 	PA_NAME=${PA_LIST[0]}
 	echo "Found good pulse audio name: $PA_NAME"
 else
-	# found multiples
-	PA_LIST=( $(pacmd list-sinks|grep -Po "(?<=name: <).*(?=>)") )
 
 	echo "----"
 	I=0
@@ -41,6 +40,23 @@ else
 
 	PA_NAME=${PA_LIST[$IDX]}
 	echo "You selected: $PA_NAME"
+fi
+
+if [ ${#PA_SRC_LIST[*]} -eq 1 ] ; then
+	PA_SRC_NAME=${PA_SRC_LIST[0]}
+	echo "Found good pulse audio name: $PA_SRC_NAME"
+else
+
+	echo "----"
+	I=0
+	for n in ${PA_SRC_LIST[*]}; do
+		echo "$I: $n"
+		I=$(( $I + 1 ))
+	done
+	read -p "Please select a sound input: " IDX
+
+	PA_SRC_NAME=${PA_SRC_LIST[$IDX]}
+	echo "You selected: $PA_SRC_NAME"
 fi
 
 sudo Xephyr :$DISP_NUM -resizeable -keybd evdev,,device=${KEYBOARD},xkbrules=evdev,xkbmodel=evdev -mouse evdev,,device=${MOUSE} -dpi 96 -retro -no-host-grab -softCursor -screen $RESOLUTION +extension GLX &
@@ -56,6 +72,7 @@ sudo bash -c "cp -f /home/\${SUDO_USER}/.config/pulse/cookie /home/${CHILD_USER}
 sudo chown ${CHILD_USER}  /home/${CHILD_USER}/.Xephyr_pa_cookie
 
 sudo su --login -c "pactl load-module module-tunnel-sink \"server=127.0.0.1 sink=$PA_NAME sink_name=local_sound cookie=/home/${CHILD_USER}/.Xephyr_pa_cookie\"" ${CHILD_USER}
+sudo su --login -c "pactl load-module module-tunnel-source \"server=127.0.0.1 source=$PA_SRC_NAME source_name=local_in_sound cookie=/home/${CHILD_USER}/.Xephyr_pa_cookie\"" ${CHILD_USER}
 
 set -x
 sudo su --login -c "dbus-launch --exit-with-session xfce4-session" ${CHILD_USER}
