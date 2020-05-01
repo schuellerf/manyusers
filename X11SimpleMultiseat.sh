@@ -2,7 +2,7 @@
 CHILD_USER=${CHILD_USER:-tobias}
 RESOLUTION=${RESOLUTION:-1920x1080}
 
-set -xe
+set -e
 
 
 # for Virtual GL checkout:
@@ -16,10 +16,39 @@ if /opt/VirtualGL/bin/glxinfo -display :0 -c|grep -P "P[^ ]*$" >/dev/null; then
 	xhost +LOCAL:
 fi
 
+get-free-display(){
+    declare -a displays
+    # find all Xephyr instances and loop through them
+    while read line; do
+        # this lists the actual command that is running, and replaces
+        # the \x00 with a space
+        var="$(cat /proc/$line/cmdline | sed -e 's/\x00/ /g'; echo)"
+        # loop through the string
+        for word in $var; do
+            # if it matches a regex, output the number of the display
+            if [[ $word =~ ^:[0-9] ]]; then
+                displays+=("${word/:/}")
+            fi
+        done
+    done <<< "$(pgrep -f Xephyr)"
+    # the initial one
+    display=1
+    while true; do
+        for d in "${displays[@]}"; do
+            if [[ "$display" == "$d" ]]; then
+                display=$(( $display + 1 ))
+            fi
+        done
+        echo $display
+        return 0
+    done
+}
+
 #fullscreen seems to take full width of X11 and ignore "-screen"
 MOUSE=${MOUSE:-/dev/input/by-path/pci-0000:00:14.0-usb-0:5.4.2:1.0-event-mouse}
 KEYBOARD=${KEYBOARD:-/dev/input/by-path/pci-0000:00:14.0-usb-0:5.4.1:1.0-event-kbd}
-DISP_NUM=${DISP_NUM:-2}
+
+[ -z "$DISP_NUM"] && DISP_NUM=$(get-free-display)
 
 set +x 
 PA_LIST=( $(pacmd list-sinks|grep -Po "(?<=name: <).*(?=>)") )
