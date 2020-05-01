@@ -15,7 +15,7 @@ check() {
 }
 
 declare -a pids
-echo "Starting listeners"
+echo -n "Starting keyboard & mouse listeners... "
 for e in $( ls /dev/input/by-path/*event-kbd* /dev/input/by-path/*event-mouse* ); do
 	check $e >/dev/null 2>&1 &
 	p=$(ps --ppid $! -o pid=)
@@ -23,29 +23,26 @@ for e in $( ls /dev/input/by-path/*event-kbd* /dev/input/by-path/*event-mouse* )
 done
 echo "done"
 
-echo "Please move the mouse"
+echo -e "\nPlease move the mouse"
 export MOUSE=$(cat /tmp/test-fifo|grep -m 1 "/dev/input/.*")
-echo $MOUSE
+echo "The mouse is $MOUSE"
 
 
-echo "Please press Ctrl often"
+echo -e "\nPlease press <Ctrl> two or three times"
 export KEYBOARD=$(cat /tmp/test-fifo|grep -m 1 "/dev/input/.*")
-echo $KEYBOARD
+echo "The keyboard is $KEYBOARD"
 
 echo Thank you
 
 sleep 1
 
-echo "Stopping listeners"
+echo -n "Stopping keyboard & mouse listeners... "
 #sudo kill ${pids[*]} >/dev/null 2>&1
 sudo killall evtest
 wait ${pids[*]} >/dev/null 2>&1
 echo "done"
 
 sudo rm -rf /tmp/test-fifo
-
-echo "The mouse is $MOUSE"
-echo "The keyboard is $KEYBOARD"
 
 echo "Let's go"
 $(dirname $0)/X11SimpleMultiseat.sh

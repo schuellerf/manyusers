@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
 # select a user if CHILD_USER is not set
-[ -z "$CHILD_USER" ] && select CHILD_USER in $(ls /home); do
-	break
-done
+if [ -z "$CHILD_USER" ]; then
+	echo -e "\nSelect a CHILD_USER, please:"
+	select CHILD_USER in $(ls /home); do
+		break
+	done
+fi
 [ -z "$CHILD_USER" ] && echo "No user selected" && exit 1
 echo Starting for $CHILD_USER ...
 RESOLUTION=${RESOLUTION:-1920x1080}
@@ -56,44 +59,6 @@ KEYBOARD=${KEYBOARD:-/dev/input/by-path/pci-0000:00:14.0-usb-0:5.4.1:1.0-event-k
 
 [ -z "$DISP_NUM"] && DISP_NUM=$(get-free-display)
 
-set +x 
-PA_LIST=( $(pacmd list-sinks|grep -Po "(?<=name: <).*(?=>)") )
-PA_SRC_LIST=( $(pacmd list-sources|grep -Po "(?<=name: <).*(?=>)"|grep -v "\\.monitor") )
-
-if [ ${#PA_LIST[*]} -eq 1 ] ; then
-	PA_NAME=${PA_LIST[0]}
-	echo "Found good pulse audio name: $PA_NAME"
-else
-
-	echo "----"
-	I=0
-	for n in ${PA_LIST[*]}; do
-		echo "$I: $n"
-		I=$(( $I + 1 ))
-	done
-	read -p "Please select a sound output: " IDX
-
-	PA_NAME=${PA_LIST[$IDX]}
-	echo "You selected: $PA_NAME"
-fi
-
-if [ ${#PA_SRC_LIST[*]} -eq 1 ] ; then
-	PA_SRC_NAME=${PA_SRC_LIST[0]}
-	echo "Found good pulse audio name: $PA_SRC_NAME"
-else
-
-	echo "----"
-	I=0
-	for n in ${PA_SRC_LIST[*]}; do
-		echo "$I: $n"
-		I=$(( $I + 1 ))
-	done
-	read -p "Please select a sound input: " IDX
-
-	PA_SRC_NAME=${PA_SRC_LIST[$IDX]}
-	echo "You selected: $PA_SRC_NAME"
-fi
-
 sudo Xephyr :$DISP_NUM -resizeable -keybd evdev,,device=${KEYBOARD},xkbrules=evdev,xkbmodel=evdev -mouse evdev,,device=${MOUSE} -dpi 96 -retro -no-host-grab -softCursor -screen $RESOLUTION +extension GLX &
 export PID=$!
 
@@ -104,13 +69,17 @@ if [ -d /home/.ecryptfs/${CHILD_USER} ]; then
 fi
 
 sudo bash -c "cp -f /home/\${SUDO_USER}/.config/pulse/cookie /home/${CHILD_USER}/.Xephyr_pa_cookie"
-sudo chown ${CHILD_USER}  /home/${CHILD_USER}/.Xephyr_pa_cookie
+sudo chown ${CHILD_USER}:  /home/${CHILD_USER}/.Xephyr_pa_cookie
 
-sudo su --login -c "pactl load-module module-tunnel-sink \"server=127.0.0.1 sink=$PA_NAME sink_name=local_sound cookie=/home/${CHILD_USER}/.Xephyr_pa_cookie\"" ${CHILD_USER}
-sudo su --login -c "pactl load-module module-tunnel-source \"server=127.0.0.1 source=$PA_SRC_NAME source_name=local_in_sound cookie=/home/${CHILD_USER}/.Xephyr_pa_cookie\"" ${CHILD_USER}
+PULSE_SERVER=127.0.0.1
+PULSE_COOKIE=/home/${CHILD_USER}/.Xephyr_pa_cookie
+
+if ! pacmd list-modules |grep module-native-protocol-tcp >/dev/null; then
+	pacmd load-module module-native-protocol-tcp
+fi
 
 set -x
-sudo su --login -c "dbus-launch --exit-with-session xfce4-session" ${CHILD_USER}
+sudo su --login -c "PULSE_SERVER=$PULSE_SERVER PULSE_COOKIE=$PULSE_COOKIE dbus-launch --exit-with-session xfce4-session" ${CHILD_USER}
 
 sleep 1
 sudo kill $(ps --ppid ${PID} -o pid=)
