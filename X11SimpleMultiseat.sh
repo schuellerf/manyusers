@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-CHILD_USER=${CHILD_USER:-tobias}
+
+# select a user if CHILD_USER is not set
+[ -z "$CHILD_USER" ] && select CHILD_USER in $(ls /home); do
+	break
+done
+[ -z "$CHILD_USER" ] && echo "No user selected" && exit 1
+echo Starting for $CHILD_USER ...
 RESOLUTION=${RESOLUTION:-1920x1080}
 
 set -e
